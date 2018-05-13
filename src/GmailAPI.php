@@ -4,11 +4,81 @@ namespace PHPGoogleAPI;
 
 require_once 'vendor/autoload.php';
 
-
-
 //TODO: get attachment
 class GmailAPI
 {
+	private $service;
+
+	/**
+	 * query for filtering messages from gmail. for understanding the format follow this :
+	 * https://developers.google.com/gmail/api/v1/reference/query-parameters
+	 * @var string
+	 */
+	private $query;
+
+	private $limit;
+
+	public function __construct($query = 'is:unread', $limit = 10)
+	{
+		$this->query = $query;
+		$this->limit = $limit;
+	}
+
+	public function fetchMailById()
+	{
+		try {
+		    	//get connection first.
+				$client = $this->getConnection();
+				$this->service = new Google_Service_Gmail($client);
+
+				//get mailIds
+				$mailIds = $this->fetchMailIds();
+
+				//get mails by id    $message = $service->users_messages->get($userId, $messageId);
+			  	$message = $service->users_messages->get($userId, $messageId);
+		        return $message;
+	      	} 
+	    catch (Exception $e) {
+	        throw new Exception($e);
+	    	}
+
+	}
+
+	public function fetchMailIds()
+	{
+		$pageToken = NULL;
+  		$messages = [];
+  		$params = [];
+
+	    try {
+
+		      $params['maxResults'] = $this->limit;
+
+		      //query
+		      $params['q'] = $this->query;
+
+		      //excluding trash and spam
+		      $params['includeSpamTrash'] = false;
+
+		      if ($pageToken) {
+		        $opt_param['pageToken'] = $pageToken;
+		      }
+		      
+		      //gets messageId.
+		      $messagesResponse = $service->users_messages->listUsersMessages($userId, $opt_param);
+
+		      $messages = [];
+		      foreach ($messagesResponse as $message) {
+		        $formattedMessage = [];
+		        $formattedMessage['id'] = $message['id'];
+		        $formattedMessage['thread_id'] = $message['threadId'];
+		        var_dump(getMessage($service, 'me', $message['id']));
+		        die;
+		        array_push($messages, $formattedMessage);    
+		      }
+			  return $messages;  
+		}
+	}
 
 	/**
 	 * Returns an authorized API client.
